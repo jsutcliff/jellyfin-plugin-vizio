@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Vizio SmartCast</title>
+</head>
+<body>
+    <div id="VizioConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <h2>Pair with TV</h2>
+                <p id="VizioPairStatus" class="fieldDescription"></p>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="VizioTvAddress">TV IP address</label>
+                    <input id="VizioTvAddress" type="text" is="emby-input" placeholder="192.168.1.50" />
+                    <div class="fieldDescription">Find it on the TV under Network settings. The TV must be on.</div>
+                </div>
+                <button id="VizioStartPair" is="emby-button" type="button" class="raised emby-button">
+                    <span>Start pairing</span>
+                </button>
+                <div id="VizioPinSection" class="hide" style="margin-top:1.5em">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="VizioPin">PIN shown on the TV</label>
+                        <input id="VizioPin" type="text" is="emby-input" inputmode="numeric" />
+                    </div>
+                    <button id="VizioFinishPair" is="emby-button" type="button" class="raised button-submit emby-button">
+                        <span>Pair</span>
+                    </button>
+                </div>
+
+                <h2 style="margin-top:2em">Launch link</h2>
+                <p class="fieldDescription">Open or bookmark this on your phone to start Jellyfin on the TV. It only works from your local network.</p>
+                <p><a id="VizioLaunchLink" is="emby-linkbutton" target="_blank"></a></p>
+
+                <form id="VizioConfigForm" style="margin-top:2em">
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="VizioTvUser">Log the TV in as</label>
+                        <select is="emby-select" id="VizioTvUser" class="emby-select-withcolor emby-select">
+                            <option value="">Nobody (show the login screen)</option>
+                        </select>
+                        <div class="fieldDescription">The launch link signs the TV in as this user, so there's no login screen. Anyone on your network who opens the launch link can start the TV signed in as them.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="VizioLaunchUrl">URL the TV opens (optional)</label>
+                        <input id="VizioLaunchUrl" type="text" is="emby-input" />
+                        <div class="fieldDescription">Leave empty to use the address the launch link was opened with, plus /web/.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="VizioDebugLogging" type="checkbox" is="emby-checkbox" />
+                            <span>Debug logging</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Writes the TV's key presses to the Jellyfin server log.</div>
+                    </div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var pluginId = '5431edc7-e380-4835-bce1-ff6712a61cd9';
+                var page = document.querySelector('#VizioConfigPage');
+
+                function post(path, body) {
+                    return ApiClient.ajax({
+                        type: 'POST',
+                        url: ApiClient.getUrl(path),
+                        data: JSON.stringify(body),
+                        contentType: 'application/json'
+                    });
+                }
+
+                function showError(err) {
+                    Dashboard.hideLoadingMsg();
+                    var p = err && err.json ? err.json() : Promise.resolve(null);
+                    p.catch(function () { return null; }).then(function (problem) {
+                        Dashboard.alert((problem && problem.detail) || 'Request failed.');
+                    });
+                }
+
+                function render(config, users) {
+                    var select = page.querySelector('#VizioTvUser');
+                    select.innerHTML = '<option value="">Nobody (show the login screen)</option>';
+                    users.forEach(function (user) {
+                        var option = document.createElement('option');
+                        option.value = user.Id;
+                        option.textContent = user.Name;
+                        select.appendChild(option);
+                    });
+                    select.value = config.TvUserId || '';
+                    page.querySelector('#VizioTvAddress').value = config.TvAddress || '';
+                    page.querySelector('#VizioLaunchUrl').value = config.LaunchUrl || '';
+                    page.querySelector('#VizioDebugLogging').checked = config.DebugLogging;
+                    page.querySelector('#VizioPairStatus').textContent = config.AuthToken
+                        ? 'Paired with ' + config.TvAddress + '.'
+                        : 'Not paired.';
+                    var link = ApiClient.getUrl('Vizio/Launch');
+                    var a = page.querySelector('#VizioLaunchLink');
+                    a.href = link;
+                    a.textContent = link;
+                }
+
+                page.addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    Promise.all([ApiClient.getPluginConfiguration(pluginId), ApiClient.getUsers()]).then(function (results) {
+                        render(results[0], results[1]);
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                page.querySelector('#VizioStartPair').addEventListener('click', function () {
+                    var address = page.querySelector('#VizioTvAddress').value.trim();
+                    if (!address) return;
+                    Dashboard.showLoadingMsg();
+                    post('Vizio/Pair/Start', { TvAddress: address }).then(function () {
+                        Dashboard.hideLoadingMsg();
+                        page.querySelector('#VizioPinSection').classList.remove('hide');
+                        page.querySelector('#VizioPin').focus();
+                    }, showError);
+                });
+
+                page.querySelector('#VizioFinishPair').addEventListener('click', function () {
+                    var pin = page.querySelector('#VizioPin').value.trim();
+                    if (!pin) return;
+                    Dashboard.showLoadingMsg();
+                    post('Vizio/Pair/Finish', { Pin: pin }).then(function () {
+                        page.querySelector('#VizioPinSection').classList.add('hide');
+                        page.querySelector('#VizioPin').value = '';
+                        return Promise.all([ApiClient.getPluginConfiguration(pluginId), ApiClient.getUsers()]);
+                    }).then(function (results) {
+                        render(results[0], results[1]);
+                        Dashboard.hideLoadingMsg();
+                    }, showError);
+                });
+
+                page.querySelector('#VizioConfigForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.TvUserId = page.querySelector('#VizioTvUser').value;
+                        config.LaunchUrl = page.querySelector('#VizioLaunchUrl').value.trim();
+                        config.DebugLogging = page.querySelector('#VizioDebugLogging').checked;
+                        return ApiClient.updatePluginConfiguration(pluginId, config);
+                    }).then(Dashboard.processPluginConfigurationUpdateResult, showError);
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>
