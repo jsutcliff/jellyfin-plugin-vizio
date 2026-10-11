@@ -1,0 +1,20 @@
+[
+  {
+    "guid": "5431edc7-e380-4835-bce1-ff6712a61cd9",
+    "name": "Vizio SmartCast",
+    "overview": "Use Jellyfin on Vizio SmartCast TVs",
+    "description": "Fixes remote navigation in the web client on Vizio SmartCast TVs and adds a link that launches Jellyfin on the TV from your phone.",
+    "owner": "jsutcliff",
+    "category": "General",
+    "versions": [
+      {
+        "version": "0.2.0.0",
+        "changelog": "TV layout fix for SmartCast, pairing, one-tap launch link, optional automatic sign-in",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/jsutcliff/jellyfin-plugin-vizio/releases/download/v0.2.0.0/vizio_0.2.0.0.zip",
+        "checksum": "7af8eab5d8f008554b94dfdc19bebd28",
+        "timestamp": "2026-10-11T21:25:46Z"
+      }
+    ]
+  }
+]
