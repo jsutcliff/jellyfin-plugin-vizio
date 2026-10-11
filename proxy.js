@@ -3,7 +3,7 @@
 // the plugin's vizio.js into the page, so it can be iterated on without rebuilding
 // and reinstalling the plugin.
 //
-//   JELLYFIN_URL=http://truenas.local:8096 node proxy.js
+//   JELLYFIN_URL=http://<jellyfin-server>:8096 node proxy.js
 //
 // Then launch http://<this-machine>:8097/web/ on the TV.
 

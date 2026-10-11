@@ -4,7 +4,7 @@
 #
 #   ./release.sh 0.1.0.0 "What changed"
 #       Publishes a GitHub release and commits manifest.json to the repo.
-#   ./release.sh 0.1.0.0 "What changed" http://192.168.68.86:8098
+#   ./release.sh 0.1.0.0 "What changed" http://<this-machine>:8098
 #       Local: writes dist/manifest.json pointing at that URL. Serve it with
 #       `node serve-dist.js` and add <url>/manifest.json as a repository in Jellyfin.
 set -euo pipefail
