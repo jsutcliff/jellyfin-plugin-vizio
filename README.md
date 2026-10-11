@@ -79,3 +79,7 @@ node serve-dist.js
 ```
 
 Then add `http://<your-computer>:8098/manifest.json` as a repository in Jellyfin.
+
+## License
+
+[GPL-3.0](LICENSE), the same license as Jellyfin.
